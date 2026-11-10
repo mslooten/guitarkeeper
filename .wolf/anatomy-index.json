@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "meta": {
+    "lastScanned": "2026-11-09T22:13:32.189Z",
+    "fileCount": 12,
+    "hits": 0,
+    "misses": 0,
+    "renderedHash": "f53f8b1f0f5af8638124ca1336f4a753c1a2dc8e6cd092e418b5c03d962eb380",
+    "storeUpdatedAt": "2026-11-09T22:13:32.190Z",
+    "rootHash": "d136ab6767ae2761"
+  },
+  "files": {
+    ".github/copilot-instructions.md": {
+      "description": "GuitarKeeper project notes",
+      "tokens": 129,
+      "hash": "ca097e6da8cd22ab",
+      "size": 515,
+      "mtimeMs": 1794237203352.1382,
+      "updatedAt": "2026-11-09T22:13:32.068Z",
+      "source": "scan",
+      "importance": 0.7018
+    },
+    ".gitignore": {
+      "description": "Git ignore rules",
+      "tokens": 68,
+      "hash": "fe718e7babb14f3c",
+      "size": 253,
+      "mtimeMs": 1794235784289.1038,
+      "updatedAt": "2026-11-09T22:13:32.068Z",
+      "source": "scan",
+      "importance": 0.7018
+    },
+    "CLAUDE.md": {
+      "description": "OpenWolf",
+      "tokens": 99,
+      "hash": "074d6b42b583729a",
+      "size": 395,
+      "mtimeMs": 1794262411683.707,
+      "updatedAt": "2026-11-09T22:13:32.068Z",
+      "source": "scan",
+      "importance": 0.7018
+    },
+    "index.html": {
+      "description": "GuitarKeeper",
+      "tokens": 163,
+      "hash": "68f8be7af515a238",
+      "size": 608,
+      "mtimeMs": 1794238166827.412,
+      "updatedAt": "2026-11-09T22:13:32.069Z",
+      "source": "scan",
+      "importance": 0.7018
+    },
+    "package.json": {
+      "description": "Node.js package manifest",
+      "tokens": 101,
+      "hash": "7152d04205ac14f6",
+      "size": 351,
+      "mtimeMs": 1794238169710.506,
+      "updatedAt": "2026-11-09T22:13:32.069Z",
+      "source": "scan",
+      "importance": 0.7018
+    },
+    "README.md": {
+      "description": "Project documentation",
+      "tokens": 272,
+      "hash": "288d2c674628d174",
+      "size": 1090,
+      "mtimeMs": 1794237203305.2104,
+      "updatedAt": "2026-11-09T22:13:32.069Z",
+      "source": "scan",
+      "importance": 0.7018
+    },
+    "src/App.vue": {
+      "description": "Vue: setup",
+      "tokens": 7579,
+      "hash": "41224d28754ba56d",
+      "size": 28452,
+      "mtimeMs": 1794262394619.7874,
+      "updatedAt": "2026-11-09T22:13:32.070Z",
+      "source": "scan",
+      "importance": 1
+    },
+    "src/components/HelloWorld.vue": {
+      "description": "Vue: setup",
+      "tokens": 753,
+      "hash": "ccdae28704aec5b3",
+      "size": 2821,
+      "mtimeMs": 1794235784291.3933,
+      "updatedAt": "2026-11-09T22:13:32.070Z",
+      "source": "scan",
+      "importance": 0.7018
+    },
+    "src/main.js": {
+      "description": "",
+      "tokens": 33,
+      "hash": "9da168ee55f01dfe",
+      "size": 115,
+      "mtimeMs": 1794238168869.5376,
+      "updatedAt": "2026-11-09T22:13:32.071Z",
+      "source": "scan",
+      "imports": [
+        "src/style.css",
+        "src/App.vue"
+      ],
+      "importance": 0.7018
+    },
+    "src/storage.js": {
+      "description": "Load every saved guitar. Resolves to an empty array for a new database.",
+      "tokens": 1753,
+      "hash": "967544f0ee54d54b",
+      "size": 6133,
+      "mtimeMs": 1794235844842.9644,
+      "updatedAt": "2026-11-09T22:13:32.071Z",
+      "source": "scan",
+      "symbols": [
+        {
+          "name": "openDatabase",
+          "kind": "fn",
+          "startLine": 9,
+          "endLine": 54,
+          "tokens": 388
+        },
+        {
+          "name": "isRecord",
+          "kind": "fn",
+          "startLine": 56,
+          "endLine": 60,
+          "tokens": 67
+        },
+        {
+          "name": "validateId",
+          "kind": "fn",
+          "startLine": 62,
+          "endLine": 66,
+          "tokens": 66
+        },
+        {
+          "name": "createId",
+          "kind": "fn",
+          "startLine": 68,
+          "endLine": 78,
+          "tokens": 166
+        },
+        {
+          "name": "unwrap",
+          "kind": "fn",
+          "startLine": 82,
+          "endLine": 100,
+          "tokens": 171
+        },
+        {
+          "name": "prepareGuitar",
+          "kind": "fn",
+          "startLine": 102,
+          "endLine": 127,
+          "tokens": 396
+        },
+        {
+          "name": "transact",
+          "kind": "fn",
+          "startLine": 129,
+          "endLine": 150,
+          "tokens": 236
+        },
+        {
+          "name": "loadGuitars",
+          "kind": "fn",
+          "startLine": 153,
+          "endLine": 155,
+          "tokens": 28
+        },
+        {
+          "name": "saveGuitar",
+          "kind": "fn",
+          "startLine": 158,
+          "endLine": 162,
+          "tokens": 46
+        },
+        {
+          "name": "deleteGuitar",
+          "kind": "fn",
+          "startLine": 165,
+          "endLine": 168,
+          "tokens": 34
+        }
+      ],
+      "symbolSource": "ts",
+      "importance": 0.7018
+    },
+    "src/style.css": {
+      "description": "Styles: 100 rules, 3 vars",
+      "tokens": 6800,
+      "hash": "812090eea1c46282",
+      "size": 23797,
+      "mtimeMs": 1794261219721.2097,
+      "updatedAt": "2026-11-09T22:13:32.071Z",
+      "source": "scan",
+      "importance": 1
+    },
+    "vite.config.js": {
+      "description": "Vite build configuration",
+      "tokens": 295,
+      "hash": "926d8eb91ba21806",
+      "size": 1032,
+      "mtimeMs": 1794238166831.6084,
+      "updatedAt": "2026-11-09T22:13:32.072Z",
+      "source": "scan",
+      "importance": 0.7018
+    }
+  },
+  "preamble": [
+    "> Project structure index. Auto-maintained by OpenWolf hooks and daemon.",
+    "> Run `openwolf scan` to generate, or wait for the first Claude Code session.",
+    "> Status: Pending initial scan"
+  ]
+}
