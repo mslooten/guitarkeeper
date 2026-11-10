@@ -256,6 +256,7 @@ svg.icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-w
   .guitar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 700px) {
+  .search input, .journal-filters input, .journal-filters select, .form-grid input:not([type=file]), .form-grid textarea { font-size: 16px; }
   .journal-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sidebar { display: none; }
   .topbar { height: 66px; padding: 0 20px; }
