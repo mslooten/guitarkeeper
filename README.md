@@ -15,3 +15,9 @@ Guitars, photos, setup details, and string history are stored in IndexedDB in th
 ## Installing and offline use
 
 Visit the production app over HTTPS (or localhost), then use the browser's install option or the in-app install button when available. On iOS/iPadOS, use Share → Add to Home Screen. After the first successful online visit, the app shell is cached for offline use. Browser storage and installation behavior vary by browser.
+
+## Deploying to GitHub Pages
+
+The GitHub Actions workflow builds and deploys the app whenever code is pushed to `main`. In the repository, open **Settings → Pages** and set the build and deployment source to **GitHub Actions**. The production build uses relative asset paths, so the same artifact works at both `https://mslooten.github.io/guitarkeeper/` and the custom-domain root. The `public/CNAME` file declares `guitarkeeper.com` in the Pages artifact.
+
+To activate the custom domain, configure its DNS records with your domain provider and add `guitarkeeper.com` under **Settings → Pages → Custom domain**. Wait for DNS verification and HTTPS provisioning, then check the **Actions** tab for a successful deployment. Local development continues to use `/`.
