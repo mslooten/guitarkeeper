@@ -246,6 +246,10 @@ svg.icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-w
 .form-error { margin: 16px 0; padding: 12px; border: 1px solid #834d62; border-radius: 9px; background: #402531; color: #ffd5e1; font-size: 12px; line-height: 1.5; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 27px; padding-top: 20px; border-top: 1px solid #393547; }
 
+@media (hover: none) and (pointer: coarse) {
+  .search input, .journal-filters input, .journal-filters select, .form-grid input:not([type=file]), .form-grid textarea { font-size: 16px; }
+}
+
 @media (max-width: 1050px) {
   .sidebar { width: 215px; }
   .content { padding-right: 5%; padding-left: 5%; }
