@@ -191,3 +191,165 @@ export async function saveGuitarOrder(ids) {
 
   await transact('readwrite', (store) => store.put(order, GUITAR_ORDER_KEY), SETTINGS_STORE_NAME)
 }
+
+// Copy only values that can survive a JSON round trip without losing data.
+function copyBackupValue(value, path, ancestors = new WeakSet()) {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value !== 'object') throw new TypeError(`${path} must contain only JSON values`)
+
+  const raw = toRaw(value)
+  if (!Array.isArray(raw) && !isRecord(raw)) {
+    throw new TypeError(`${path} must contain only JSON objects and arrays`)
+  }
+  if (ancestors.has(raw)) throw new TypeError(`${path} must not contain circular references`)
+  if (Object.getOwnPropertySymbols(raw).length) {
+    throw new TypeError(`${path} must not contain symbol properties`)
+  }
+  ancestors.add(raw)
+  try {
+    if (Array.isArray(raw)) {
+      const keys = Object.keys(raw)
+      if (keys.length !== raw.length || keys.some((key, index) => key !== String(index))) {
+        throw new TypeError(`${path} must be a dense array without extra properties`)
+      }
+      return raw.map((entry, index) => copyBackupValue(entry, `${path}[${index}]`, ancestors))
+    }
+
+    const copy = {}
+    for (const key of Object.keys(raw)) {
+      Object.defineProperty(copy, key, {
+        value: copyBackupValue(raw[key], `${path}.${key}`, ancestors),
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      })
+    }
+    return copy
+  } finally {
+    ancestors.delete(raw)
+  }
+}
+
+/** Validate and copy a version 1 backup, preserving JSON-compatible unknown fields. */
+export function validateBackup(input) {
+  if (!isRecord(input)) throw new TypeError('Backup must be an object')
+  const backup = copyBackupValue(input, 'Backup')
+  if (backup.format !== 'guitarkeeper-backup') throw new TypeError('Invalid backup format')
+  if (backup.version !== 1) throw new TypeError('Unsupported backup version')
+  if (typeof backup.exportedAt !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(backup.exportedAt) ||
+      !Number.isFinite(Date.parse(backup.exportedAt))) {
+    throw new TypeError('Backup exportedAt must be an ISO date string')
+  }
+  if (!Array.isArray(backup.guitars)) throw new TypeError('Backup guitars must be an array')
+  if (!Array.isArray(backup.guitarOrder)) throw new TypeError('Backup guitarOrder must be an array')
+
+  const ids = new Set()
+  backup.guitars = backup.guitars.map((guitar, index) => {
+    if (!isRecord(guitar)) throw new TypeError(`Backup guitar ${index} must be an object`)
+    validateId(guitar.id) // Backups must never generate replacement ids.
+    if (ids.has(guitar.id)) throw new TypeError('Backup guitars must not contain duplicate ids')
+    ids.add(guitar.id)
+    const record = prepareGuitar(guitar)
+    for (const field of ['action', 'relief', 'pickupHeights', 'mods']) {
+      if (record.setup[field] !== undefined && typeof record.setup[field] !== 'string') {
+        throw new TypeError(`Backup guitar ${index} setup ${field} must be a string`)
+      }
+    }
+    for (const [changeIndex, change] of record.stringChanges.entries()) {
+      if (!isRecord(change)) {
+        throw new TypeError(`Backup guitar ${index} string change ${changeIndex} must be an object`)
+      }
+      for (const field of ['date', 'brand', 'gauge']) {
+        if (change[field] !== undefined && typeof change[field] !== 'string') {
+          throw new TypeError(`Backup guitar ${index} string change ${changeIndex} ${field} must be a string`)
+        }
+      }
+    }
+    if (isRecord(record.specs)) {
+      for (const value of Object.values(record.specs)) {
+        try { String(value) } catch {
+          throw new TypeError(`Backup guitar ${index} specs values must be displayable`)
+        }
+      }
+    }
+    return record
+  })
+
+  const ordered = new Set()
+  for (const id of backup.guitarOrder) {
+    validateId(id)
+    if (ordered.has(id)) throw new TypeError('Backup guitarOrder must not contain duplicate ids')
+    if (!ids.has(id)) throw new TypeError('Backup guitarOrder references an unknown guitar id')
+    ordered.add(id)
+  }
+  return backup
+}
+
+/** Export a consistent, JSON-serializable snapshot of guitars and their saved order. */
+export async function exportBackup() {
+  const db = await openDatabase()
+  return new Promise((resolve, reject) => {
+    let transaction
+    let requestError
+    try {
+      transaction = db.transaction([STORE_NAME, SETTINGS_STORE_NAME], 'readonly')
+      const guitars = transaction.objectStore(STORE_NAME).getAll()
+      const order = transaction.objectStore(SETTINGS_STORE_NAME).get(GUITAR_ORDER_KEY)
+      transaction.onerror = (event) => {
+        requestError = event.target?.error || transaction.error || new Error('Could not export backup')
+      }
+      transaction.onabort = () => reject(requestError || transaction.error || new Error('Backup export aborted'))
+      transaction.oncomplete = () => {
+        try {
+          const savedOrder = order.result ?? []
+          if (!Array.isArray(savedOrder)) throw new TypeError('Saved guitar order must be an array')
+          for (const id of savedOrder) validateId(id)
+          const ids = new Set(guitars.result.map((guitar) => guitar.id))
+          resolve(validateBackup({
+            format: 'guitarkeeper-backup',
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            guitars: guitars.result,
+            guitarOrder: savedOrder.filter((id) => ids.has(id)),
+          }))
+        } catch (error) {
+          reject(error)
+        }
+      }
+    } catch (error) {
+      if (transaction) {
+        try { transaction.abort() } catch { /* The transaction is already inactive. */ }
+      }
+      reject(error)
+    }
+  })
+}
+
+/** Validate and atomically replace all guitars and their saved order. */
+export async function restoreBackup(input) {
+  const backup = validateBackup(input)
+  const db = await openDatabase()
+  return new Promise((resolve, reject) => {
+    let transaction
+    let requestError
+    try {
+      transaction = db.transaction([STORE_NAME, SETTINGS_STORE_NAME], 'readwrite')
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = (event) => {
+        requestError = event.target?.error || transaction.error || new Error('Could not restore backup')
+      }
+      transaction.onabort = () => reject(requestError || transaction.error || new Error('Backup restore aborted'))
+      const guitars = transaction.objectStore(STORE_NAME)
+      guitars.clear()
+      for (const guitar of backup.guitars) guitars.put(guitar)
+      transaction.objectStore(SETTINGS_STORE_NAME).put(backup.guitarOrder, GUITAR_ORDER_KEY)
+    } catch (error) {
+      if (transaction) {
+        try { transaction.abort() } catch { /* The transaction is already inactive. */ }
+      }
+      reject(error)
+    }
+  })
+}

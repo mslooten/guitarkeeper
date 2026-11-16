@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test"
   },
   "dependencies": {
     "vue": "^3.5.44",
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.10",
+    "fake-indexeddb": "^6.2.8",
     "vite": "^8.3.6",
     "vite-plugin-pwa": "^2.0.0"
   }

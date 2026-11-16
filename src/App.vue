@@ -14,6 +14,9 @@ import {
   deleteGuitar,
   loadGuitarOrder,
   saveGuitarOrder,
+  exportBackup,
+  validateBackup,
+  restoreBackup,
 } from "./storage";
 
 const guitars = ref([]);
@@ -40,10 +43,14 @@ const guitarForm = ref({});
 const setupForm = ref({});
 const stringForm = ref({});
 const photoLoading = ref(false);
+const backupReading = ref(false);
+const backupFile = ref(null);
+const backupName = ref("");
 const ordering = ref(false);
 const dragging = ref(false);
 let previousOrder = [];
 let photoReadVersion = 0;
+let backupReadVersion = 0;
 let returnFocus = null;
 
 const selected = computed(() =>
@@ -278,6 +285,7 @@ function syncRoute() {
   if (view.value === route.view && selectedId.value === route.id) return;
   photoReadVersion++;
   photoLoading.value = false;
+  resetBackupSelection();
   modal.value = "";
   view.value = route.view;
   selectedId.value = route.id;
@@ -302,12 +310,20 @@ function openGuitar(guitar) {
 function openModal(name) {
   returnFocus = document.activeElement;
   formError.value = "";
+  if (name === "backup") resetBackupSelection();
   modal.value = name;
+}
+function resetBackupSelection() {
+  backupReadVersion++;
+  backupReading.value = false;
+  backupFile.value = null;
+  backupName.value = "";
 }
 function closeModal() {
   if (saving.value) return;
   photoReadVersion++;
   photoLoading.value = false;
+  resetBackupSelection();
   modal.value = "";
 }
 watch(modal, async (value) => {
@@ -346,6 +362,67 @@ function editSetup() {
 function addStringChange() {
   stringForm.value = { date: today(), brand: "", gauge: "" };
   openModal("strings");
+}
+async function downloadBackup() {
+  if (saving.value) return;
+  saving.value = true;
+  formError.value = "";
+  try {
+    const backup = await exportBackup();
+    const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `guitarkeeper-backup-${today()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (error) {
+    formError.value = `Could not create backup: ${errorMessage(error)}`;
+  } finally {
+    saving.value = false;
+  }
+}
+async function chooseBackup(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  const version = ++backupReadVersion;
+  backupFile.value = null;
+  backupName.value = "";
+  backupReading.value = false;
+  formError.value = "";
+  if (!file) return;
+  backupReading.value = true;
+  try {
+    const parsed = JSON.parse(await file.text());
+    const backup = validateBackup(parsed);
+    if (version !== backupReadVersion) return;
+    backupFile.value = backup;
+    backupName.value = file.name;
+  } catch (error) {
+    if (version === backupReadVersion) formError.value = `Could not read backup: ${errorMessage(error)}`;
+  } finally {
+    if (version === backupReadVersion) backupReading.value = false;
+  }
+}
+async function importBackup() {
+  if (!backupFile.value || saving.value || backupReading.value) return;
+  saving.value = true;
+  formError.value = "";
+  try {
+    await restoreBackup(backupFile.value);
+    backupFile.value = null;
+    backupName.value = "";
+    modal.value = "";
+    navigate("collection");
+    search.value = "";
+    await refresh();
+    if (!loadError.value) notice.value = "Backup restored on this device.";
+  } catch (error) {
+    formError.value = `Could not restore backup: ${errorMessage(error)}`;
+  } finally {
+    saving.value = false;
+  }
 }
 function readPhoto(event) {
   const file = event.target.files?.[0];
@@ -731,6 +808,14 @@ onBeforeUnmount(() => {
                 ></span
               ><svg class="icon home-link-arrow"><use href="#i-arrow" /></svg>
             </button>
+            <button class="home-link" @click="openModal('backup')">
+              <span class="home-link-icon"
+                ><svg class="icon"><use href="#i-download" /></svg></span
+              ><span class="home-link-copy"
+                ><strong>Backup &amp; restore</strong
+                ><span>Download or restore your collection</span></span
+              ><svg class="icon home-link-arrow"><use href="#i-arrow" /></svg>
+            </button>
           </div>
         </template>
         <template v-else-if="view === 'collection'">
@@ -749,6 +834,9 @@ onBeforeUnmount(() => {
               <svg class="icon"><use href="#i-plus" /></svg> Add a guitar
             </button>
           </div>
+          <button class="text-button backup-link" @click="openModal('backup')">
+            <svg class="icon"><use href="#i-download" /></svg> Backup &amp; restore
+          </button>
           <div class="section-heading">
             <div>
               <div class="eyebrow muted">THE GOOD STUFF</div>
@@ -1261,6 +1349,7 @@ onBeforeUnmount(() => {
               setup: "Edit setup",
               strings: "Log a string change",
               delete: "Remove this guitar?",
+              backup: "Backup & restore",
             }[modal]
           }}
         </h2>
@@ -1275,8 +1364,33 @@ onBeforeUnmount(() => {
       </button>
     </div>
     <p v-if="formError" class="form-error" role="alert">{{ formError }}</p>
+    <div v-if="modal === 'backup'" class="backup-panel">
+      <p class="modal-intro">
+        Download a private JSON backup of your guitars, photos, setup notes,
+        string history, and collection order. Keep the file somewhere safe;
+        it is not encrypted or automatically synced.
+      </p>
+      <button class="button button-outline" :disabled="saving || backupReading" @click="downloadBackup">
+        <svg class="icon"><use href="#i-download" /></svg>
+        {{ saving ? "Working…" : "Download backup" }}
+      </button>
+      <div class="backup-restore">
+        <h3>Restore a backup</h3>
+        <p>Restoring replaces all guitars currently on this device. Download a backup first if you want to keep them.</p>
+        <label for="backup-file">Choose a GuitarKeeper backup</label>
+        <input id="backup-file" type="file" accept=".json,application/json" :disabled="saving || backupReading" @change="chooseBackup" />
+        <p v-if="backupReading" role="status">Reading backup…</p>
+        <div v-if="backupFile" class="backup-confirm">
+          <p>Ready to restore <strong>{{ backupFile.guitars.length }}</strong> {{ backupFile.guitars.length === 1 ? "guitar" : "guitars" }} from {{ backupName }}.</p>
+          <p><strong>This will replace your current collection and cannot be undone.</strong></p>
+          <button class="button button-danger" :disabled="saving" @click="importBackup">
+            {{ saving ? "Restoring…" : "Replace collection and restore" }}
+          </button>
+        </div>
+      </div>
+    </div>
     <form
-      v-if="modal === 'add-guitar' || modal === 'edit-guitar'"
+      v-else-if="modal === 'add-guitar' || modal === 'edit-guitar'"
       @submit.prevent="submitGuitar"
     >
       <p class="modal-intro">

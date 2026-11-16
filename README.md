@@ -10,7 +10,13 @@ Use Node.js 20.19+ or 22.12+ and npm. Install dependencies with `npm install`, t
 
 ## Your data
 
-Guitars, photos, setup details, and string history are stored in IndexedDB in the browser on this device. They are not synced or sent to a server. Clearing browser or site data, changing browsers or devices, or uninstalling the app may remove access to the collection. There is currently no cloud backup, account, export, or paid plan.
+Guitars, photos, setup details, and string history are stored in IndexedDB in the browser on this device. They are not synced or sent to a server. Clearing browser or site data, changing browsers or devices, or uninstalling the app may remove access to the collection. There is no cloud backup or account.
+
+## Backup and restore
+
+Choose **Backup & restore** on Home or Collection, then **Download backup** to save a JSON file containing your guitars, photos, setup notes, string history, and collection order. Store it somewhere safe: the file is not encrypted and is not synced automatically. Download fresh backups after making changes.
+
+To move or restore a collection, open **Backup & restore** on the destination device or browser, choose the backup file, review the guitar count, and confirm **Replace collection and restore**. Restoring replaces the entire collection on that device, including when the backup is empty; it does not merge. Back up the current collection first if you need to keep it. The file is validated before replacement, and the replacement is committed atomically. No data is uploaded.
 
 ## Installing and offline use
 
